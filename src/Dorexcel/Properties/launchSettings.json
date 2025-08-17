@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Dorexcel (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Dorexcel (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
