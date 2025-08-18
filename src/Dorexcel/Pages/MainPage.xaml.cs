@@ -243,6 +243,8 @@ public sealed partial class MainPage : Page
 
             RegenerateSuggestions();
 
+            CleanFields(true);
+
             await ShowDialogSafeAsync(new()
             {
                 Title = "Informacion",
@@ -261,6 +263,28 @@ public sealed partial class MainPage : Page
             });
         }
 
+    }
+
+    private void CleanFields(bool cleanId = false)
+    {
+        if (cleanId)
+        {
+            IdColumnTextBox.Text = string.Empty;
+        }
+        
+
+        foreach (var column in ViewModel.Columns)
+        {
+            var isIdColumn = column == ViewModel.SelectedIdColumn;
+
+            if (isIdColumn) continue;
+
+            var textBoxForColumn = (AutoSuggestBox)FieldsRepeater.TryGetElement(ViewModel.NonIdColumns.IndexOf(column));
+
+            if (textBoxForColumn == null) continue;
+
+            textBoxForColumn!.Text = string.Empty;
+        }
     }
 
     private async Task FindForEntryAsync()
@@ -295,18 +319,7 @@ public sealed partial class MainPage : Page
             });
         }
 
-        foreach (var column in ViewModel.Columns)
-        {
-            var isIdColumn = column == ViewModel.SelectedIdColumn;
-
-            if (isIdColumn) continue;
-
-            var textBoxForColumn = (AutoSuggestBox)FieldsRepeater.TryGetElement(ViewModel.NonIdColumns.IndexOf(column));
-
-            if (textBoxForColumn == null) continue;
-
-            textBoxForColumn!.Text = string.Empty;
-        }
+        CleanFields();
     }
 
     private async void OnIdColumnQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
