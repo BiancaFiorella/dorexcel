@@ -4,7 +4,7 @@
   <b>Dorexcel</b>
 </h1>
 <p>
-  <a target="_blank" href="https://github.com/BiancaFiorella/dorexcel/releases/download/v1.0.1/Dorexcel.exe">
+  <a target="_blank" href="https://github.com/BiancaFiorella/dorexcel/releases/download/v1.0.2/Dorexcel.exe">
     Download Dorexcel.exe
   </a>
 </p>
