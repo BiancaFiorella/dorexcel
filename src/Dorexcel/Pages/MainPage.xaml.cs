@@ -1,7 +1,9 @@
 using Dorexcel.ViewModels;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
@@ -9,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
+using Windows.UI;
 using WinRT.Interop;
 
 namespace Dorexcel.Pages;
@@ -17,7 +20,12 @@ public sealed partial class MainPage : Page
     public MainPageViewModel ViewModel { get; } = new();
 
     private ExcelPackage? Excel;
+
     private ExcelWorksheet SelectedSheet => Excel!.Workbook.Worksheets[ViewModel.SelectedSheet];
+
+    private string IdColumnTextBoxPreviousText = string.Empty;
+
+    private Color EmptyColor = Colors.LightYellow;
 
     private string? GetCellValue(int row, int column)
     {
@@ -99,7 +107,7 @@ public sealed partial class MainPage : Page
         {
             var uniqueSortedValues = GetUniqueSortedColumnValues(ViewModel.Columns.IndexOf(column) + 1);
             ViewModel.ColumnValues.Add(column, uniqueSortedValues);
-        }        
+        }
     }
 
 
@@ -194,7 +202,7 @@ public sealed partial class MainPage : Page
             var columnName = GetCellValue(ViewModel.HeaderRowNumber, columnIndex);
 
             if (string.IsNullOrWhiteSpace(columnName)) break;
-       
+
             ViewModel.Columns.Add(columnName);
         }
 
@@ -221,6 +229,18 @@ public sealed partial class MainPage : Page
     {
         var row = FindEntryIdRowOrNextAvailable();
         var entryId = GetEntryId();
+
+        if (string.IsNullOrWhiteSpace(entryId))
+        {
+            await ShowDialogSafeAsync(new()
+            {
+                Title = "Error",
+                Content = "No se pudo guardar un registro sin valor de id",
+                CloseButtonText = "Aceptar",
+            });
+
+            return;
+        }
 
         foreach (var column in ViewModel.Columns)
         {
@@ -252,6 +272,9 @@ public sealed partial class MainPage : Page
                 CloseButtonText = "Aceptar",
 
             });
+
+            IdColumnTextBox.Focus(FocusState.Programmatic);
+            await FocusManager.TryFocusAsync(IdColumnTextBox, FocusState.Programmatic);            
         }
         catch
         {
@@ -271,7 +294,7 @@ public sealed partial class MainPage : Page
         {
             IdColumnTextBox.Text = string.Empty;
         }
-        
+
 
         foreach (var column in ViewModel.Columns)
         {
@@ -284,6 +307,7 @@ public sealed partial class MainPage : Page
             if (textBoxForColumn == null) continue;
 
             textBoxForColumn!.Text = string.Empty;
+            textBoxForColumn!.Background = null;
         }
     }
 
@@ -306,6 +330,11 @@ public sealed partial class MainPage : Page
 
                     var textBoxForColumn = (AutoSuggestBox)FieldsRepeater.TryGetElement(ViewModel.NonIdColumns.IndexOf(column));
                     textBoxForColumn!.Text = GetCellValue(row, ViewModel.Columns.IndexOf(column) + 1);
+
+                    if (string.IsNullOrWhiteSpace(textBoxForColumn!.Text))
+                    {
+                        textBoxForColumn!.Background = new SolidColorBrush(EmptyColor);
+                    }
                 }
 
                 return;
@@ -331,14 +360,46 @@ public sealed partial class MainPage : Page
     {
         await FindForEntryAsync();
     }
+    
+    private void OnIdColumnTextBoxPreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        IdColumnTextBoxPreviousText = IdColumnTextBox.Text;
+    }
 
-    private void OnAutoSuggestBoxTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    private async void OnAutoSuggestBoxTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
         if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
         {
+            if (sender == IdColumnTextBox && string.IsNullOrWhiteSpace(sender.Text))
+            {                
+                IdColumnTextBoxPreviousText = string.Empty;
+                IdColumnTextBox.ItemsSource = Array.Empty<string>();
+                CleanFields(true);
+
+                return;
+            }
+
+            if(sender == IdColumnTextBox && string.IsNullOrEmpty(IdColumnTextBoxPreviousText) && sender.Text.Trim().Length > 2)
+            {               
+                IdColumnTextBoxPreviousText = sender.Text;
+                IdColumnTextBox.ItemsSource = Array.Empty<string>();
+                await FindForEntryAsync();
+
+                return;
+            }
+
             var text = sender.Text.Trim().ToLower();
             var suggestions = ViewModel.ColumnValues[sender.Header.ToString()!];
             sender.ItemsSource = suggestions.Where(s => s.Trim().ToLower().StartsWith(text, StringComparison.InvariantCultureIgnoreCase)).ToArray(); ;
+
+            if (sender != IdColumnTextBox && string.IsNullOrWhiteSpace(sender.Text))
+            {
+                sender.Background = new SolidColorBrush(EmptyColor);
+            }
+            else if (sender != IdColumnTextBox && !string.IsNullOrWhiteSpace(sender.Text))
+            {
+                sender.Background = null;
+            }
         }
     }
 
@@ -346,10 +407,10 @@ public sealed partial class MainPage : Page
     {
         sender.Text = args.SelectedItem.ToString();
 
-        if(sender.Header.ToString() == ViewModel.SelectedIdColumn)
+        if (sender.Header.ToString() == ViewModel.SelectedIdColumn)
         {
             await FindForEntryAsync();
-        }            
+        }
     }
 }
 

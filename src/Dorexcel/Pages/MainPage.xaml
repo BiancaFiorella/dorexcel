@@ -171,6 +171,7 @@
                 Header="{x:Bind ViewModel.SelectedIdColumn, Mode=OneWay}"
                 Opacity="{x:Bind ViewModel.IsIdColumnSelected, Mode=OneWay, Converter={StaticResource BoolToOpacity}}"
                 PlaceholderText="{x:Bind ViewModel.SelectedIdColumn, Mode=OneWay, Converter={StaticResource EnterColumn}}"
+                PreviewKeyDown="OnIdColumnTextBoxPreviewKeyDown"
                 QuerySubmitted="OnIdColumnQuerySubmitted"
                 SuggestionChosen="OnAutoSuggestBoxSuggestionChosen"
                 TextChanged="OnAutoSuggestBoxTextChanged" />
