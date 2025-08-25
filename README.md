@@ -4,8 +4,8 @@
   <b>Dorexcel</b>
 </h1>
 <p>
-  <a target="_blank" href="https://github.com/BiancaFiorella/dorexcel/releases/download/v1.0.3/Dorexcel.exe">
-    Download Dorexcel v1.0.3
+  <a target="_blank" href="https://github.com/BiancaFiorella/dorexcel/releases/download/v1.0.4/Dorexcel.exe">
+    Download Dorexcel v1.0.4
   </a>
 </p>
 <br/>
