@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Media;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -74,7 +75,7 @@ public sealed partial class MainPage : Page
         {
             cellContent = GetCellValue(row, columnIndex);
             if (string.IsNullOrWhiteSpace(cellContent)) break;
-            values.Add(cellContent.Trim());
+            values.Add(cellContent.ToUpper(CultureInfo.InvariantCulture).Trim());
             row += 1;
         }
 
@@ -274,7 +275,7 @@ public sealed partial class MainPage : Page
             });
 
             IdColumnTextBox.Focus(FocusState.Programmatic);
-            await FocusManager.TryFocusAsync(IdColumnTextBox, FocusState.Programmatic);            
+            await FocusManager.TryFocusAsync(IdColumnTextBox, FocusState.Programmatic);
         }
         catch
         {
@@ -329,7 +330,7 @@ public sealed partial class MainPage : Page
                     if (isIdColumn) continue;
 
                     var textBoxForColumn = (AutoSuggestBox)FieldsRepeater.TryGetElement(ViewModel.NonIdColumns.IndexOf(column));
-                    textBoxForColumn!.Text = GetCellValue(row, ViewModel.Columns.IndexOf(column) + 1);
+                    textBoxForColumn!.Text = GetCellValue(row, ViewModel.Columns.IndexOf(column) + 1)?.ToUpper(CultureInfo.InvariantCulture);
 
                     if (string.IsNullOrWhiteSpace(textBoxForColumn!.Text))
                     {
@@ -360,18 +361,34 @@ public sealed partial class MainPage : Page
     {
         await FindForEntryAsync();
     }
-    
+
     private void OnIdColumnTextBoxPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
         IdColumnTextBoxPreviousText = IdColumnTextBox.Text;
+    }
+
+    private void OnAutoSuggestBoxCharacterReceived(UIElement sender, CharacterReceivedRoutedEventArgs args)
+    {
+        if (!char.IsLetter(args.Character)) return;
+
+        var textBox = sender as AutoSuggestBox;
+        if (textBox == null) return;
+
+        textBox.Text += args.Character.ToString().ToUpper(CultureInfo.InvariantCulture);
+        args.Handled = true;
     }
 
     private async void OnAutoSuggestBoxTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
         if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
         {
+            if (sender.Text != sender.Text.ToUpper(CultureInfo.InvariantCulture))
+            {
+                sender.Text = sender.Text.ToUpper(CultureInfo.InvariantCulture);
+            }
+
             if (sender == IdColumnTextBox && string.IsNullOrWhiteSpace(sender.Text))
-            {                
+            {
                 IdColumnTextBoxPreviousText = string.Empty;
                 IdColumnTextBox.ItemsSource = Array.Empty<string>();
                 CleanFields(true);
@@ -379,8 +396,8 @@ public sealed partial class MainPage : Page
                 return;
             }
 
-            if(sender == IdColumnTextBox && string.IsNullOrEmpty(IdColumnTextBoxPreviousText) && sender.Text.Trim().Length > 2)
-            {               
+            if (sender == IdColumnTextBox && string.IsNullOrEmpty(IdColumnTextBoxPreviousText) && sender.Text.Trim().Length > 2)
+            {
                 IdColumnTextBoxPreviousText = sender.Text;
                 IdColumnTextBox.ItemsSource = Array.Empty<string>();
                 await FindForEntryAsync();
